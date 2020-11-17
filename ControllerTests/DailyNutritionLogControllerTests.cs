@@ -155,5 +155,49 @@ namespace Fitness_Tracker_Tests.ControllerTests
                 }
             }
         }
+
+        [Fact]
+        public async Task POST_DailyNutritionLogControllerActionReturnsBadRequestWithInvalidModel()
+        {
+            var options = SqliteInMemory
+                .CreateOptions<ApplicationDbContext>();
+
+            using (var context = new ApplicationDbContext(options))
+            {
+                context.Database.EnsureCreated();
+                context.SeedTestDatabaseUsersWithDailyNutritionLogs();
+            }
+
+            using (var context = new ApplicationDbContext(options))
+            {
+                var controller = new DailyNutritionLogController(
+                    context,
+                    TestUtilities.SetUpMockClaimsManager(2).Object,
+                    TestUtilities.GenericSetUpControllerStubLogger<DailyNutritionLogController>().Object)
+                    {
+                        ControllerContext = new ControllerContext
+                        {
+                            HttpContext = new DefaultHttpContext {  User = TestUtilities.setUpSampleHttpContextUser() }
+                        }
+                    };
+                // model validation will not actually occur on this object during model binding, see the following comment for more info
+                var invalidDailyNutritionLog = new DailyNutritionLog
+                {
+                    UserId = 2,
+                    FoodEntries = new List<FoodEntry>()
+                };
+                // model validation doesnt actually happen when we test the controller action so we have to add it manually,
+                // therefore we are limited in testing the data annotations to the model binding
+                controller.ModelState.AddModelError("unitTestError", "a model validation error occured");
+                var result = await controller.Post(2, invalidDailyNutritionLog);
+                Assert.IsType<BadRequestObjectResult>(result);
+            }
+        }
+
+        [Fact]
+        public async Task POST_DailyNutritionLogControllerActionReturnsForbiddenWithWrongUser()
+        {
+
+        }
     }
 }
