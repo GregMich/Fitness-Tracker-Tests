@@ -133,7 +133,7 @@ namespace Fitness_Tracker_Tests.ControllerTests
                     });
                 }
 
-                CreatedAtActionResult result = (CreatedAtActionResult)(await controller.Post(1, newDailyNutritionLog));
+                CreatedAtActionResult result = (CreatedAtActionResult)(await controller.Post(userId, newDailyNutritionLog));
                 Assert.IsType<CreatedAtActionResult>(result);
                 var resultData = result.Value as DailyNutritionLog;
                 newEntryId = resultData.DailyNutritionLogId;
@@ -246,5 +246,7 @@ namespace Fitness_Tracker_Tests.ControllerTests
                 Assert.IsType<ForbidResult>(result_3);
             }
         }
+
+
     }
 }
