@@ -197,7 +197,54 @@ namespace Fitness_Tracker_Tests.ControllerTests
         [Fact]
         public async Task POST_DailyNutritionLogControllerActionReturnsForbiddenWithWrongUser()
         {
+            var options = SqliteInMemory
+                .CreateOptions<ApplicationDbContext>();
 
+            using (var context = new ApplicationDbContext(options))
+            {
+                context.Database.EnsureCreated();
+                context.SeedTestDatabaseUsersWithDailyNutritionLogs();
+            }
+
+            using (var context = new ApplicationDbContext(options))
+            {
+                DailyNutritionLogController controller = new DailyNutritionLogController(
+                    context,
+                    TestUtilities.SetUpMockClaimsManager(1).Object,
+                    TestUtilities.GenericSetUpControllerStubLogger<DailyNutritionLogController>().Object)
+                    {
+                        ControllerContext = new ControllerContext
+                        {
+                            HttpContext = new DefaultHttpContext { User = TestUtilities.setUpSampleHttpContextUser() }
+                        }
+                    };
+
+                var dnl = new DailyNutritionLog
+                {
+                    UserId = 1,
+                    NutritionLogDate = new DateTime(2020, 1, 1),
+                    FoodEntries = new List<FoodEntry>()
+                };
+
+                // test userId in claims manager does not match route
+                var result = await controller.Post(2, dnl);
+                Assert.IsType<ForbidResult>(result);
+
+                var dnl2 = new DailyNutritionLog
+                {
+                    UserId = 2,
+                    NutritionLogDate = new DateTime(2020, 1, 1),
+                    FoodEntries = new List<FoodEntry>()
+                };
+
+                // test userId in claims manager does not match daily nutrition log
+                var result_2 = await controller.Post(1, dnl2);
+                Assert.IsType<ForbidResult>(result_2);
+
+                // test both cases at the same time
+                var result_3 = await controller.Post(2, dnl2);
+                Assert.IsType<ForbidResult>(result_3);
+            }
         }
     }
 }
